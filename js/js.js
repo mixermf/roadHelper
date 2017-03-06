@@ -13,9 +13,10 @@
 var obj = {
     init:function(){
         var geolocation = ymaps.geolocation,
+      
             myMap = new ymaps.Map('map', {
-            center: [54.83, 37.11],
-            zoom: 7,
+            center: [55.74734881801514, 37.62507083466477],
+            zoom: 10,
             controls: ['geolocationControl']
         }, {
             searchControlProvider: 'yandex#search'
@@ -33,17 +34,19 @@ var obj = {
             //     });
             //     myMap.geoObjects.add(result.geoObjects);
             // });
-
-            geolocation.get({
-                provider: 'browser',
-                mapStateAutoApply: true
-            }).then(function (result) {
-                // Синим цветом пометим положение, полученное через браузер.
-                // Если браузер не поддерживает эту функциональность, метка не будет добавлена на карту.
-                result.geoObjects.options.set('preset', 'islands#blueCircleIcon');
-                myMap.geoObjects.add(result.geoObjects);
-                console.log(result.geoObjects);
-            });
+            var myCoordFromBrowser;
+                geolocation.get({
+                    provider: 'browser',
+                    mapStateAutoApply: true
+                }).then(function (result) {
+                    // Синим цветом пометим положение, полученное через браузер.
+                    // Если браузер не поддерживает эту функциональность, метка не будет добавлена на карту.
+                   // result.geoObjects.options.set('preset', 'islands#blueCircleIcon');
+                   // myMap.geoObjects.add(result.geoObjects);
+                    //console.log(result.geoObjects.position);
+                    myCoordFromBrowser = result.geoObjects.position;
+                });
+            
 
         // Создаем кластеризатор c красной иконкой (по умолчанию используются синяя).
         var clusterer = new ymaps.Clusterer({preset: 'islands#redClusterIcons'}),
@@ -69,6 +72,7 @@ var obj = {
             if(addMarkers){
                 modal_close('my_modal');
             }
+
 
         });
         document.querySelector('#removeMarkers').addEventListener('click', removeMarkers);
@@ -113,46 +117,59 @@ var obj = {
             } else {
                 for (var i = 0, l = newPlacemarks.length; i < l; i++) {
                     collection.add(newPlacemarks[i]);
+
                 }
             }
+            //Анимируем карту на тикет
+             myMap.setCenter(myCoordFromBrowser,13,{
+                duration:1000,
+                timingFunction: "ease-in"
+             });
             //console.log(newPlacemarks);
         }
-        var myGeocoder = ymaps.geocode("Москва");
-            myGeocoder.then(
-                function (res) {
-                    map.geoObjects.add(res.geoObjects);
-                    // Выведем в консоль данные, полученные в результате геокодирования объекта.
-                    console.log(res.geoObjects.get(0).properties.get('metaDataProperty'));
-                },
-                function (err) {
-                    // обработка ошибки
-                }
-            );
+
+        var CustomBalloonClass = ymaps.templateLayoutFactory.createClass(
+             '<div class="balloon">' +
+             '<h1>{{properties.params.[0]}}</h1>' +
+             '<div class="balloon_content">{{properties.params.[1]}}</div>' +
+             '<div class="balloon_footer">{{properties.params.[2]}}</div>' +
+             '</div>'
+         );
+
         // Функция, создающая необходимое количество геообъектов внутри указанной области.
         function createGeoObjects (number, bounds) {
             var placemarks = [];
             var title = document.querySelector('#title').value;
             var message = document.querySelector('#message').value;
+            var footer = "<i>ico</i> <i>ico2</i>";
             // Создаем нужное количество меток
             for (var i = 0; i < number; i++) {
                 // Генерируем координаты метки случайным образом.
-                coordinates = getRandomCoordinates(bounds);
+                coordinates = myCoordFromBrowser;
+                //coordinates = getRandomCoordinates(bounds);
                 // coordinates = ymaps.geolocation.get({
                 //     provider: 'browser',
                 //     mapStateAutoApply: true
                 // });
                 // Создаем метку со случайными координатами.
-              
+                console.log(coordinates);
                 myPlacemark = new ymaps.Placemark(coordinates,{
-                    balloonContentHeader: title,
-                    balloonContentBody: "<div style='width:80%'>"+message+"</div>",
-                    balloonContentFooter: "<i>ico</i> <i>ico2</i>",
-                    hintContent: ""
+                    // balloonContentHeader: title,
+                    // balloonContentBody: message,
+                    // balloonContentFooter: "<i>ico</i> <i>ico2</i>",
+                    hintContent: "",
+                    params:[title,message,footer]
+                }, {
+                 preset: 'islands#redDotIcon',
+                 balloonContentLayout : CustomBalloonClass
                 });
 
                 placemarks.push(myPlacemark);
+
+
             }
             return placemarks;
+            
         }
 
         // Функция, генерирующая случайные координаты
@@ -177,7 +194,11 @@ var obj = {
             clusterer.removeAll();
             // Удаляем все метки из коллекции.
             collection.removeAll();
-        }     
+        }
+        function makeData(){
+
+        }
+
     }
 }
 ymaps.ready(obj.init);    
