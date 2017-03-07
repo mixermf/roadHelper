@@ -34,16 +34,14 @@ var obj = {
             //     });
             //     myMap.geoObjects.add(result.geoObjects);
             // });
+
+            //Определяем координаты через провайдера интернета
             var myCoordFromBrowser;
                 geolocation.get({
                     provider: 'browser',
                     mapStateAutoApply: true
                 }).then(function (result) {
-                    // Синим цветом пометим положение, полученное через браузер.
-                    // Если браузер не поддерживает эту функциональность, метка не будет добавлена на карту.
-                   // result.geoObjects.options.set('preset', 'islands#blueCircleIcon');
-                   // myMap.geoObjects.add(result.geoObjects);
-                    //console.log(result.geoObjects.position);
+                    
                     myCoordFromBrowser = result.geoObjects.position;
                 });
             
@@ -55,9 +53,7 @@ var obj = {
         // Дополнительное поле ввода при включенном режиме кластеризации.
         // gridSizeField = $('<div class="field" style="display: none">Размер ячейки кластера в пикселях: <input type="text" size="6" id ="gridSize" value="64"/></div>').appendTo('.inputs');
 
-        //Кнопка
-        // firstButton = new ymaps.control.Button("Need Help!");
-        // myMap.controls.add(firstButton, {float: 'right'});
+       
         // Добавляем кластеризатор на карту.
         myMap.geoObjects.add(clusterer);
 
@@ -84,21 +80,22 @@ var obj = {
             var a = document.querySelector('.'+boxname);
             a.classList.toggle('active');
         }
+        //close Modal
         function modal_close(boxname){
             var a = document.querySelector('.'+boxname);
             a.classList.toggle('active');
         }
-
+        //Определяем адрес по координатам
+       
         // Добавление меток с произвольными координатами.
         function addMarkers () {
             // Количество меток, которое нужно добавить на карту.
-            //var placemarksNumber = $('#count').val(),
+           
             var placemarksNumber = 1;
                 bounds = myMap.getBounds(),
                 // Флаг, показывающий, нужно ли кластеризовать объекты.
                 useClusterer = true,
                 // Размер ячейки кластеризатора, заданный пользователем.
-                //gridSize = parseInt($('#gridSize').val()),
                 gridSize = 64;
                 // Генерируем нужное количество новых объектов.
                 newPlacemarks = createGeoObjects(placemarksNumber, bounds);
@@ -121,12 +118,20 @@ var obj = {
                 }
             }
             //Анимируем карту на тикет
-             myMap.setCenter(myCoordFromBrowser,13,{
+             myMap.setCenter(coordinates,13,{
                 duration:1000,
                 timingFunction: "ease-in"
              });
-            //console.log(newPlacemarks);
+            console.log(jsonData);
+            //Получаем город
+                geolocation.get(coordinates).then(function (result) {
+                    console.log(result.geoObjects.get(0).properties.getAll());
+                });
+                
+                
+            
         }
+
 
         var CustomBalloonClass = ymaps.templateLayoutFactory.createClass(
              '<div class="balloon">' +
@@ -135,7 +140,7 @@ var obj = {
              '<div class="balloon_footer">{{properties.params.[2]}}</div>' +
              '</div>'
          );
-
+        var jsonData = {};
         // Функция, создающая необходимое количество геообъектов внутри указанной области.
         function createGeoObjects (number, bounds) {
             var placemarks = [];
@@ -143,9 +148,10 @@ var obj = {
             var message = document.querySelector('#message').value;
             var footer = "<i>ico</i> <i>ico2</i>";
             // Создаем нужное количество меток
+
             for (var i = 0; i < number; i++) {
                 // Генерируем координаты метки случайным образом.
-                coordinates = myCoordFromBrowser;
+                coordinates = myCoordFromBrowser?myCoordFromBrowser:getRandomCoordinates(bounds);
                 //coordinates = getRandomCoordinates(bounds);
                 // coordinates = ymaps.geolocation.get({
                 //     provider: 'browser',
@@ -154,19 +160,26 @@ var obj = {
                 // Создаем метку со случайными координатами.
                 console.log(coordinates);
                 myPlacemark = new ymaps.Placemark(coordinates,{
-                    // balloonContentHeader: title,
-                    // balloonContentBody: message,
-                    // balloonContentFooter: "<i>ico</i> <i>ico2</i>",
+                    balloonContentHeader: title,
+                    balloonContentBody: message,
+                    balloonContentFooter: footer,
                     hintContent: "",
                     params:[title,message,footer]
                 }, {
                  preset: 'islands#redDotIcon',
-                 balloonContentLayout : CustomBalloonClass
+                 //balloonContentLayout : CustomBalloonClass
                 });
 
                 placemarks.push(myPlacemark);
 
-
+                jsonData = {
+                    "coord":[coordinates[0],coordinates[1]],
+                    "subject":title,
+                    "message":message,
+                    "data":new Date().getTime() / 1000,
+                    "active":1
+                };
+                
             }
             return placemarks;
             
