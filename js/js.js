@@ -12,7 +12,7 @@
 
 var obj = {
     init:function(){
-        var geolocation = ymaps.geolocation,
+        var geolocation = ymaps.geolocation, city, country, address,jsonData = {},
       
             myMap = new ymaps.Map('map', {
             center: [55.74734881801514, 37.62507083466477],
@@ -122,13 +122,9 @@ var obj = {
                 duration:1000,
                 timingFunction: "ease-in"
              });
-            console.log(jsonData);
-            //Получаем город
-                geolocation.get(coordinates).then(function (result) {
-                    console.log(result.geoObjects.get(0).properties.getAll());
-                });
-                
-                
+           
+  
+            console.log(jsonData);    
             
         }
 
@@ -140,7 +136,7 @@ var obj = {
              '<div class="balloon_footer">{{properties.params.[2]}}</div>' +
              '</div>'
          );
-        var jsonData = {};
+        
         // Функция, создающая необходимое количество геообъектов внутри указанной области.
         function createGeoObjects (number, bounds) {
             var placemarks = [];
@@ -163,8 +159,8 @@ var obj = {
                     balloonContentHeader: title,
                     balloonContentBody: message,
                     balloonContentFooter: footer,
-                    hintContent: "",
-                    params:[title,message,footer]
+                    hintContent: title,
+                    //params:[title,message,footer]
                 }, {
                  preset: 'islands#redDotIcon',
                  //balloonContentLayout : CustomBalloonClass
@@ -172,17 +168,24 @@ var obj = {
 
                 placemarks.push(myPlacemark);
 
+                //Получаем город
+                geolocation.get(coordinates).then(function (result) {
+                    city = result.geoObjects.get(0).properties._data.name;
+                    country = result.geoObjects.get(0).properties._data.description;
+                    //console.log(result.geoObjects.get(0).properties);
+                    jsonData['city'] = city;
+                    jsonData['country'] = country;
+                });
+                console.log();
                 jsonData = {
                     "coord":[coordinates[0],coordinates[1]],
                     "subject":title,
                     "message":message,
-                    "data":new Date().getTime() / 1000,
-                    "active":1
+                    "currDate":new Date().getTime(),
+                    "active":1,
                 };
-                
             }
             return placemarks;
-            
         }
 
         // Функция, генерирующая случайные координаты
