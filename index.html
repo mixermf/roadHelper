@@ -17,7 +17,8 @@
 <body>
 
 	<div class="my_modal">
-	 <div class="modal__wrap">
+	 	<div class="modal__wrap">
+	 		<div class="modal__close">X</div>
 			<div class="modal__title">
 				<h2>Сообщите о проблеме</h2>
 				<p>Не успеете глазом моргнуть, как добрые люди уже вам помогут!</p>
@@ -33,10 +34,18 @@
 			    <textarea class="form-control" id="message" rows="5">Люди, срочно нужна помощь, капот вспыхнул при нажатии на газ!</textarea>
 			</div>
 		    <input type="button" value="Добавить на карту" id="addMarkers" class="btn btn-success"/>
-		    <input type="button" value="Удалить все метки" id="removeMarkers" class="btn btn-danger"/>
+		    <input type="button" value="Закрыть" id="modal__close" class="btn btn-danger"/>
 		</div>
 	</div>
-	<button class="btn btn-warning overmap">Сообщить о проблеме</button>
+
+	<div class="list_page">
+		<ul class="list-group">
+		
+		</ul>
+	</div>
+
+	<button class="btn btn-warning overmap ticket_btn">Сообщить о проблеме</button>
+	<button class="btn btn-warning overmap list_btn">Посмотреть списком</button>
 
 <div id="map"></div>
 </body>

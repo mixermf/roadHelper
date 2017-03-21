@@ -10,9 +10,13 @@
 1. Регистариция через смс верификацию
 */
 
+
+//РЕАЛИЗОВАТЬ ЕДИНУЮ ЛОГИКУ В ОТРИСОВКЕ МЕТОК. ИЗ БАЗЫ НА КАРТУ. С КЛИЕНТА В БАЗУ.
+var jsonData = Object.create(null);
+var objTickets = {};
 var obj = {
     init:function(){
-        var geolocation = ymaps.geolocation, city, country, address,jsonData = {},
+        var geolocation = ymaps.geolocation, city, country, address,
       
             myMap = new ymaps.Map('map', {
             center: [55.74734881801514, 37.62507083466477],
@@ -21,189 +25,165 @@ var obj = {
         }, {
             searchControlProvider: 'yandex#search'
         });
-            // Сравним положение, вычисленное по ip пользователя и
-            // положение, вычисленное средствами браузера.
-            // geolocation.get({
-            //     provider: 'yandex',
-            //     mapStateAutoApply: true
-            // }).then(function (result) {
-            //     // Красным цветом пометим положение, вычисленное через ip.
-            //     result.geoObjects.options.set('preset', 'islands#redCircleIcon');
-            //     result.geoObjects.get(0).properties.set({
-            //         balloonContentBody: 'Мое местоположение'
-            //     });
-            //     myMap.geoObjects.add(result.geoObjects);
-            // });
-
-            //Определяем координаты через провайдера интернета
-            var myCoordFromBrowser;
-                geolocation.get({
-                    provider: 'browser',
-                    mapStateAutoApply: true
-                }).then(function (result) {
-                    
-                    myCoordFromBrowser = result.geoObjects.position;
-                });
-            
-
-        // Создаем кластеризатор c красной иконкой (по умолчанию используются синяя).
-        var clusterer = new ymaps.Clusterer({preset: 'islands#redClusterIcons'}),
-        // Создаем коллекцию геообъектов.
-            collection = new ymaps.GeoObjectCollection();
-        // Дополнительное поле ввода при включенном режиме кластеризации.
-        // gridSizeField = $('<div class="field" style="display: none">Размер ячейки кластера в пикселях: <input type="text" size="6" id ="gridSize" value="64"/></div>').appendTo('.inputs');
-
-       
-        // Добавляем кластеризатор на карту.
-        myMap.geoObjects.add(clusterer);
-
-        // Добавляем коллекцию геообъектов на карту.
-        myMap.geoObjects.add(collection);
-        document.querySelector('.overmap').addEventListener('click', function(){
-            modal_init('my_modal');
-        });
-        document.querySelector('#useClusterer').addEventListener('click', toggleGridSizeField);
-        document.querySelector('#addMarkers').addEventListener('click', function(){
-            addMarkers();
-            if(addMarkers){
-                modal_close('my_modal');
-            }
-
-
-        });
-        document.querySelector('#removeMarkers').addEventListener('click', removeMarkers);
-        // firstButton.events.add('click',modal_init('my_modal'))
-
-
-        //show Modal
-        function modal_init(boxname){
-            var a = document.querySelector('.'+boxname);
-            a.classList.toggle('active');
-        }
-        //close Modal
-        function modal_close(boxname){
-            var a = document.querySelector('.'+boxname);
-            a.classList.toggle('active');
-        }
-        //Определяем адрес по координатам
-       
-        // Добавление меток с произвольными координатами.
-        function addMarkers () {
-            // Количество меток, которое нужно добавить на карту.
+          
            
-            var placemarksNumber = 1;
-                bounds = myMap.getBounds(),
-                // Флаг, показывающий, нужно ли кластеризовать объекты.
-                useClusterer = true,
-                // Размер ячейки кластеризатора, заданный пользователем.
-                gridSize = 64;
-                // Генерируем нужное количество новых объектов.
-                newPlacemarks = createGeoObjects(placemarksNumber, bounds);
+      
+                     
+        
 
-            if (gridSize > 0) {
-                clusterer.options.set({
-                    gridSize: gridSize
-                });
+             //Определяем координаты через провайдера интернета и получаем город и страну
+        var myCoordFromBrowser;
+            geolocation.get({
+               provider: 'browser',
+                mapStateAutoApply: true
+            }).then(function (result) {
+                address = result.geoObjects.get(0).properties._data.name;
+                country = result.geoObjects.get(0).properties._data.description;
+                myCoordFromBrowser = result.geoObjects.position;
+            });
+        
+        //OBJECTMANAGER   //Добавляет метки на карту из JSON объекта.
+        objectManager = new ymaps.ObjectManager({
+            // Чтобы метки начали кластеризоваться, выставляем опцию.
+            clusterize: true,
+            // ObjectManager принимает те же опции, что и кластеризатор.
+            gridSize: 10
+         });
+
+        // Чтобы задать опции одиночным объектам и кластерам,
+        // обратимся к дочерним коллекциям ObjectManager.
+        objectManager.objects.options.set('preset', 'islands#greenDotIcon');
+        objectManager.clusters.options.set('preset', 'islands#greenClusterIcons');
+        myMap.geoObjects.add(objectManager);
+
+        objectManager.add(objTickets);       
+
+        //Инициализируем модальное окно ticket
+        var modal = Object.create(Modal);
+        //Вызываем окно с формой добавления тикета
+        document.querySelector('.ticket_btn').addEventListener('click', function(){
+            modal.init('my_modal');
+        });
+        //Добавляем тикет и закрываем модальное окно
+        document.querySelector('#addMarkers').addEventListener('click', function(){
+            createTicket();
+            if(createTicket){
+                modal.init('my_modal');
             }
+        });
+        //Закрываем ticket_btn
+        document.querySelector('#modal__close').addEventListener('click', function(){
+           modal.init('my_modal'); 
+        });
+        document.querySelector('.list_btn').addEventListener('click', function(){
+             modal.init('list_page');
 
-            // Если используется кластеризатор, то добавляем кластер на карту,
-            // если не используется - добавляем на карту коллекцию геообъектов.
-            if (useClusterer) {
-                // Добавлеяем массив меток в кластеризатор.
-                clusterer.add(newPlacemarks);
-            } else {
-                for (var i = 0, l = newPlacemarks.length; i < l; i++) {
-                    collection.add(newPlacemarks[i]);
-
+            if(objTickets){
+                var length = objTickets.features.length;
+                var c1,c2;
+                var routeL;
+                var listHTML = '';
+                for(var i=0;i<length;i++){
+                    var elem = objTickets.features[i];
+                    c1 = elem.geometry.coordinates[0];
+                    c2 = elem.geometry.coordinates[1];
+                    
+                   routeL = ymaps.route([myCoordFromBrowser, [c1,c2]], {avoidTrafficJams: true})
+                        .then(
+                            function (route) {
+                                //myMap.geoObjects.add(route);
+                                var routeLength = route.getLength();
+                                 return routeLength;
+                                
+                            },
+                            function (error) {
+                                alert("Возникла ошибка: " + error.message);
+                            }
+                        );
+                    
+                    listHTML = '<div>'+
+                                    '<h5>'+elem.properties.balloonContentHeader+'</h5>'+
+                                    '<p>'+elem.properties.balloonContentBody+'</p>'+
+                                    '<span class="list_address">'+elem.properties.balloonContentFooter+'</span>'+
+                                    '<span class="routeLength">'+routeL._value+'</span>'+
+                                '</div>';
+                    var elemLi = document.createElement('li');
+                    elemLi.innerHTML = listHTML;       
+                    console.log(routeL);
+                    elemLi.setAttribute('class','list-group-item');
+                    document.querySelector('.list-group').appendChild(elemLi);
+                    
+                      
+                    console.log(elem);
+                   
                 }
+               
+
             }
-            //Анимируем карту на тикет
-             myMap.setCenter(coordinates,13,{
+          
+
+        });   
+     
+
+     
+        function addTicket(){
+            sendData('http://nikfolio.ru/geo_test/send.php',jsonData,function(){
+                console.log(jsonData);
+            });
+        };
+
+        function createTicket(){
+            var balloonContentHeader = document.querySelector('#title').value,
+                balloonContentBody = document.querySelector('#message').value,
+                balloonContentFooter = address,
+                clusterCaption = balloonContentHeader;
+             
+            coordinates = myCoordFromBrowser;
+            var placemarkSolo = {
+               "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "id": new Date().getTime(),
+                    "geometry":
+                       {
+                            "type": "Point",
+                            "coordinates": [coordinates[0], coordinates[1]]
+                        },
+                    "properties":
+                        {
+                            "balloonContentHeader": balloonContentHeader,
+                            "balloonContentBody": balloonContentBody,
+                            "balloonContentFooter": balloonContentFooter,
+                            "hintContent": balloonContentHeader,
+                            "clusterCaption": clusterCaption,
+                            
+                        }
+                    
+                }]
+            };
+                   
+            jsonData.address    = address;
+            jsonData.country    = country;
+            jsonData.long       = coordinates[0];
+            jsonData.lat        = coordinates[1];
+            jsonData.subject    = balloonContentHeader;
+            jsonData.message    = balloonContentBody;
+            jsonData.currDate   = new Date().getTime();
+            jsonData.active     = 1;   
+
+            addTicket();
+
+            objectManager.add(placemarkSolo);
+
+            myMap.setCenter(coordinates,13,{
                 duration:1000,
                 timingFunction: "ease-in"
-             });
-           
-  
-            console.log(jsonData);    
-            
-        }
+            });
+        };
 
+        function updateMap(){
 
-        var CustomBalloonClass = ymaps.templateLayoutFactory.createClass(
-             '<div class="balloon">' +
-             '<h1>{{properties.params.[0]}}</h1>' +
-             '<div class="balloon_content">{{properties.params.[1]}}</div>' +
-             '<div class="balloon_footer">{{properties.params.[2]}}</div>' +
-             '</div>'
-         );
-        
-        // Функция, создающая необходимое количество геообъектов внутри указанной области.
-        function createGeoObjects (number, bounds) {
-            var placemarks = [];
-            var title = document.querySelector('#title').value;
-            var message = document.querySelector('#message').value;
-            var footer = "<i>ico</i> <i>ico2</i>";
-            // Создаем нужное количество меток
-
-            for (var i = 0; i < number; i++) {
-                // Генерируем координаты метки случайным образом.
-                coordinates = myCoordFromBrowser?myCoordFromBrowser:getRandomCoordinates(bounds);
-                //coordinates = getRandomCoordinates(bounds);
-                // coordinates = ymaps.geolocation.get({
-                //     provider: 'browser',
-                //     mapStateAutoApply: true
-                // });
-                // Создаем метку со случайными координатами.
-                console.log(coordinates);
-                myPlacemark = new ymaps.Placemark(coordinates,{
-                    balloonContentHeader: title,
-                    balloonContentBody: message,
-                    balloonContentFooter: footer,
-                    hintContent: title,
-                    //params:[title,message,footer]
-                }, {
-                 preset: 'islands#redDotIcon',
-                 //balloonContentLayout : CustomBalloonClass
-                });
-
-                placemarks.push(myPlacemark);
-
-                //Получаем город
-                geolocation.get(coordinates).then(function (result) {
-                    city = result.geoObjects.get(0).properties._data.name;
-                    country = result.geoObjects.get(0).properties._data.description;
-                    //console.log(result.geoObjects.get(0).properties);
-                    jsonData['city'] = city;
-                    jsonData['country'] = country;
-                });
-                console.log();
-                jsonData = {
-                    "coord":[coordinates[0],coordinates[1]],
-                    "subject":title,
-                    "message":message,
-                    "currDate":new Date().getTime(),
-                    "active":1,
-                };
-            }
-            return placemarks;
-        }
-
-        // Функция, генерирующая случайные координаты
-        // в пределах области просмотра карты.
-        function getRandomCoordinates (bounds) {
-            var size = [bounds[1][0] - bounds[0][0], bounds[1][1] - bounds[0][1]];
-            return [Math.random() * size[0] + bounds[0][0], Math.random() * size[1] + bounds[0][1]];
-        }
-
-        // Показывать/скрывать дополнительное поле ввода.
-        function toggleGridSizeField () {
-            // Если пользователь включил режим кластеризации, то появляется дополнительное поле
-            // для ввода опции кластеризатора - размер ячейки кластеризации в пикселях.
-            // По умолчанию размер ячейки сетки равен 64.
-            // При отключении режима кластеризации дополнительное поле ввода скрывается.
-            gridSizeField.toggle();
-        }
-
+        }             
         // Удаление всех меток с карты
         function removeMarkers () {
             // Удаляем все  метки из кластеризатора.
@@ -211,12 +191,74 @@ var obj = {
             // Удаляем все метки из коллекции.
             collection.removeAll();
         }
-        function makeData(){
-
-        }
 
     }
 }
+getData('getAllTickets'); 
 ymaps.ready(obj.init);    
+//Modal control
+var Modal = Object.create(null);
+//show Modal
+Modal.init = function(boxname){
+    var a = document.querySelector('.'+boxname);
+    a.classList.toggle('active');
+    console.log(boxname);
+};
+//close Modal
+// var modal_close = document.querySelector('.modal__close');
+// console.log(modal_close);
+// modal_close.addEventListener('click',function(e){
+//         modal.close('.my_modal');
+// })
+
+//AJAX
+function getData(request,f){
+    sendData('http://nikfolio.ru/geo_test/send.php',request);
+    if (typeof f == 'function'){
+        f();
+    };
+};
+//Формируем объект objTickets с полученными данными из базы;
 
 
+function sendData(url,obj,f){
+    var xhr = new XMLHttpRequest();
+    //console.log(data);
+    var data;
+    if(typeof obj == 'object')
+        {
+            data = 'data='+JSON.stringify(obj);
+        };
+    if(typeof obj == 'string')
+        {
+            data = 'string='+ obj;
+        };
+    //console.log(data);
+    xhr.onreadystatechange = function() {
+      if (this.readyState != 4) return;
+
+      if(this.status != 200) {
+        // обработать ошибку
+        alert( 'ошибка: ' + (this.status ? this.statusText : 'запрос не удался') );
+        return;
+      }else {
+      //console.log(typeof this.responseText);
+        if (typeof f == 'function'){
+            f();
+        }
+       // console.log(this.responseText);
+            if (this.responseText!='success'){
+                objTickets = JSON.parse(this.responseText);
+                return objTickets;
+            }else{
+                return false;
+            }
+            
+      }
+
+    }
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+    xhr.send(data);
+}
