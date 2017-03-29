@@ -13,7 +13,8 @@
 
 //РЕАЛИЗОВАТЬ ЕДИНУЮ ЛОГИКУ В ОТРИСОВКЕ МЕТОК. ИЗ БАЗЫ НА КАРТУ. С КЛИЕНТА В БАЗУ.
 var jsonData = Object.create(null);
-var objTickets = {};
+var objTickets = false;
+var list_items= {};
 var obj = {
     init:function(){
         var geolocation = ymaps.geolocation, city, country, address,
@@ -25,11 +26,6 @@ var obj = {
         }, {
             searchControlProvider: 'yandex#search'
         });
-          
-           
-      
-                     
-        
 
              //Определяем координаты через провайдера интернета и получаем город и страну
         var myCoordFromBrowser;
@@ -57,78 +53,88 @@ var obj = {
         myMap.geoObjects.add(objectManager);
 
         objectManager.add(objTickets);       
-
+        // console.log(objectManager);
+        // console.log(objTickets);
         //Инициализируем модальное окно ticket
-        var modal = Object.create(Modal);
+        var modal = new Modal('my_modal');
+        var list_modal = new Modal('list_page');
         //Вызываем окно с формой добавления тикета
         document.querySelector('.ticket_btn').addEventListener('click', function(){
-            modal.init('my_modal');
+            modal.init();
         });
         //Добавляем тикет и закрываем модальное окно
         document.querySelector('#addMarkers').addEventListener('click', function(){
             createTicket();
             if(createTicket){
-                modal.init('my_modal');
+                modal.init();
             }
         });
         //Закрываем ticket_btn
         document.querySelector('#modal__close').addEventListener('click', function(){
-           modal.init('my_modal'); 
+           modal.init(); 
         });
         document.querySelector('.list_btn').addEventListener('click', function(){
-             modal.init('list_page');
+             list_modal.init();
+             makeList();
+        });
 
-            if(objTickets){
-                var length = objTickets.features.length;
-                var c1,c2;
-                var routeL;
-                var listHTML = '';
-                for(var i=0;i<length;i++){
-                    var elem = objTickets.features[i];
-                    c1 = elem.geometry.coordinates[0];
-                    c2 = elem.geometry.coordinates[1];
-                    
-                   routeL = ymaps.route([myCoordFromBrowser, [c1,c2]], {avoidTrafficJams: true})
-                        .then(
-                            function (route) {
-                                //myMap.geoObjects.add(route);
-                                var routeLength = route.getLength();
-                                 return routeLength;
-                                
-                            },
-                            function (error) {
-                                alert("Возникла ошибка: " + error.message);
-                            }
-                        );
-                    
-                    listHTML = '<div>'+
-                                    '<h5>'+elem.properties.balloonContentHeader+'</h5>'+
-                                    '<p>'+elem.properties.balloonContentBody+'</p>'+
-                                    '<span class="list_address">'+elem.properties.balloonContentFooter+'</span>'+
-                                    '<span class="routeLength">'+routeL._value+'</span>'+
-                                '</div>';
-                    var elemLi = document.createElement('li');
-                    elemLi.innerHTML = listHTML;       
-                    console.log(routeL);
-                    elemLi.setAttribute('class','list-group-item');
-                    document.querySelector('.list-group').appendChild(elemLi);
-                    
-                      
-                    console.log(elem);
-                   
-                }
-               
+//MAKE LIST
+function findRout(c1,c2,id){
+    ymaps.route([myCoordFromBrowser, [c1,c2]], {avoidTrafficJams: true})
+       
+        .then(
+            function (route) {
+                var routeLength = route.getLength();
+                routeLength = (routeLength / 1000).toFixed(2); 
+                //return (routeLength);
+                //console.log(document.querySelector('#id' + id));
+                document.querySelector('#id' + id).innerHTML = routeLength + ' км.';
+                },
 
+            function (error) {
+                alert("Возникла ошибка: " + error.message);
             }
-          
+        );
+};
+function makeList(){
+    if(objTickets){
+        var length = objTickets.features.length;
+        var c1,c2;
+        var listHTML = '';
+        var arr = [];
+        //console.log(objTickets.features[0]);
+        document.querySelector('.list-group').innerHTML = '';
+        for(var i=0;i<length;i++){
+           var elem = objTickets.features[i];
+            c1 = elem.geometry.coordinates[0];
+            c2 = elem.geometry.coordinates[1];
+            (function(){
+                listHTML = '<div>'+
+                    '<h5>'+elem.properties.balloonContentHeader+'</h5>'+
+                    '<p>'+elem.properties.balloonContentBody+'</p>'+
+                    '<span class="list_address">'+elem.properties.balloonContentFooter+'</span>'+
+                    '<span class="routeLength" id=id' + elem.id + '></span>'+
+                '</div>';
+                var elemLi = document.createElement('li');
+                elemLi.innerHTML = listHTML;       
+                elemLi.setAttribute('class','list-group-item');
+                document.querySelector('.list-group').appendChild(elemLi);
+               //console.log(document.querySelector('#id'+elem.id));
+                findRout(c1,c2,elem.id);   
+            })();  
+             
+        }
+    }
+    else{alert('cant find the DATA');}
+};  
 
-        });   
-     
-
-     
+//END LIST      
+           
+           
         function addTicket(){
             sendData('http://nikfolio.ru/geo_test/send.php',jsonData,function(){
-                console.log(jsonData);
+                getData('getAllTickets');
+                makeList();
             });
         };
 
@@ -197,19 +203,27 @@ var obj = {
 getData('getAllTickets'); 
 ymaps.ready(obj.init);    
 //Modal control
-var Modal = Object.create(null);
-//show Modal
-Modal.init = function(boxname){
-    var a = document.querySelector('.'+boxname);
-    a.classList.toggle('active');
-    console.log(boxname);
+function Modal(boxname){
+    this.boxname = boxname;
+    this.a = document.querySelector('.'+this.boxname);
+   
+    this.makeClose();
+}
+Modal.prototype.makeClose = function(){
+        this.cb = document.createElement('i');
+        this.cb.className = 'close_icon';
+        this.cb.innerHTML = 'X';
+        var this1 = this;
+        this.a.appendChild(this.cb);
+        this.a.addEventListener('click',function(e){
+            if(e.target.classList.contains('close_icon')){
+                 this1.init();
+            }
+        })
+}
+Modal.prototype.init = function(){
+    this.a.classList.toggle('active');
 };
-//close Modal
-// var modal_close = document.querySelector('.modal__close');
-// console.log(modal_close);
-// modal_close.addEventListener('click',function(e){
-//         modal.close('.my_modal');
-// })
 
 //AJAX
 function getData(request,f){
