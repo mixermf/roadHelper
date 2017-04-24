@@ -12,10 +12,10 @@
 
 
 //РЕАЛИЗОВАТЬ ЕДИНУЮ ЛОГИКУ В ОТРИСОВКЕ МЕТОК. ИЗ БАЗЫ НА КАРТУ. С КЛИЕНТА В БАЗУ.
-var jsonData = Object.create(null);
-var objTickets = false;
-var list_items= {};
-var obj = {
+var jsonData = Object.create(null), //Коллекция хранит данные о тикете
+ objTickets = false,
+ list_items= {},
+ obj = {
     init:function(){
         var geolocation = ymaps.geolocation, city, country, address,
       
@@ -56,30 +56,58 @@ var obj = {
         // console.log(objectManager);
         // console.log(objTickets);
         //Инициализируем модальное окно ticket
-        var modal = new Modal('my_modal');
-        var list_modal = new Modal('list_page');
+
+
+        var modal_add = new Custombox.modal({
+  		// Options
+			content : {
+			    target: '.my_modal',
+			}
+		});
+		var modal_list = new Custombox.modal({
+  		// Options
+			content : {
+			    target: '.list_page',
+			}
+		});
+		//
+
+	    // var modal = new Modal('my_modal');
+     	//var list_modal = new Modal('list_page');
         //Вызываем окно с формой добавления тикета
         document.querySelector('.ticket_btn').addEventListener('click', function(){
-            modal.init();
+            modal_add.open();
+            //console.log(document.querySelectorAll('.addMarkers'));
+
         });
         //Добавляем тикет и закрываем модальное окно
-        document.querySelector('#addMarkers').addEventListener('click', function(){
-            createTicket();
-            if(createTicket){
-                modal.init();
-            }
+        document.querySelector('body').addEventListener('click',function(e){
+        	//console.log(e);
+        })
+
+        
+        document.querySelector('body').addEventListener('click', function(e){
+        	console.log(e.target);
+        	if(e.target.classList.contains('addMarkers')){
+        		createTicket();
+           		Custombox.modal.close(); 
+        	}
+        	if(e.target.classList.contains('list_btn')){
+        		makeList();
+          		modal_list.open();
+        	}
+
         });
         //Закрываем ticket_btn
         document.querySelector('#modal__close').addEventListener('click', function(){
-           modal.init(); 
+           Custombox.modal.close(); 
         });
         document.querySelector('.list_btn').addEventListener('click', function(){
-             list_modal.init();
-             makeList();
+        	
         });
 
-//MAKE LIST
-function findRout(c1,c2,id){
+//MAKE LIST                ****************НАПИСАТЬ PROMISE ПО НАХОЖДЕНИЮ РАССТОЯНИЯ****************
+function findRout(c1,c2,id){ //Ищем путь до метки 
     ymaps.route([myCoordFromBrowser, [c1,c2]], {avoidTrafficJams: true})
        
         .then(
@@ -96,7 +124,7 @@ function findRout(c1,c2,id){
             }
         );
 };
-function makeList(){
+function makeList (){//Формируем список меток в HTML
     if(objTickets){
         var length = objTickets.features.length;
         var c1,c2;
@@ -124,6 +152,7 @@ function makeList(){
             })();  
              
         }
+     
     }
     else{alert('cant find the DATA');}
 };  
@@ -175,7 +204,7 @@ function makeList(){
             jsonData.subject    = balloonContentHeader;
             jsonData.message    = balloonContentBody;
             jsonData.currDate   = new Date().getTime();
-            jsonData.active     = 1;   
+            jsonData.active     = 1;
 
             addTicket();
 
@@ -185,6 +214,8 @@ function makeList(){
                 duration:1000,
                 timingFunction: "ease-in"
             });
+
+
         };
 
         function updateMap(){
@@ -198,6 +229,17 @@ function makeList(){
             collection.removeAll();
         }
 
+        function extend() { //Объединяем объекты
+            for(var i=1; i < arguments.length; i++) {
+                for(var key in arguments[i]) {
+                    if(arguments[i].hasOwnProperty(key)) {
+                        arguments[0][key] = arguments[i][key];
+                    }
+                }
+            }
+            console.log(arguments[0]);
+        }
+       
     }
 }
 getData('getAllTickets'); 
@@ -223,6 +265,8 @@ Modal.prototype.makeClose = function(){
 }
 Modal.prototype.init = function(){
     this.a.classList.toggle('active');
+    var btn_list = document.querySelector('.btn_list');
+    btn_list.classList.toggle('inner_init');
 };
 
 //AJAX

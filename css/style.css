@@ -1,7 +1,8 @@
  * { -webkit-user-select:none; -webkit-tap-highlight-color:rgba(255, 255, 255, 0); -ms-touch-action:none;} 
+ html{  overflow-x:  hidden;  }
         body, html, ul,li {
             font-family: Arial;
-            font-size: 14px;
+            font-size: 16px;
             width: 100%;
             height: 100%;
             padding: 0;
@@ -28,8 +29,11 @@
 			z-index: 100;
 			background:#fff;
         }
-        .modal__title{
-
+        .modal__title h2{
+            font-size: 1.3rem;
+        }
+         .modal__title p{
+            font-size: 0.9rem;
         }
         .modal__wrap{
         	margin: 0 auto;
@@ -52,16 +56,58 @@
            
             z-index: 10;
         }
-        .ticket_btn{
-            top:10px;
-            right: 20px;
+        .btn_list{
+            position: fixed;
+            bottom: 0px;
+            left:0px;
+            width:100%;
+            height: 50px;
+            background: none;
+            z-index:100;
         }
+        .btn_list ul{
+            list-style:none;
+            margin:0;
+            font-size: 0px;
+            text-align: center;
+        }
+        .btn_list li{
+            display: inline-block;
+            font-size: 1rem;
+            width: 25%;
+            height: 50px;
+            color: #000;
+            float:left;
+        }
+        .ticket_btn i{
+            background: url("data:image/svg+xml,%3Csvg width%3D%2226%22 height%3D%2226%22 viewBox%3D%220 0 26 26%22 xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath d%3D%22M14 12v-6c0-.556-.448-1.001-1-1.001-.556 0-1 .448-1 1.001v6h-5.999c-.556 0-1.001.448-1.001 1 0 .556.448 1 1.001 1h5.999v5.999c0 .556.448 1.001 1 1.001.556 0 1-.448 1-1.001v-5.999h5.999c.556 0 1.001-.448 1.001-1 0-.556-.448-1-1.001-1h-5.999z%22 fill%3D%22%23000%22%2F%3E%3C%2Fsvg%3E") center center no-repeat;
+            width: 100%;
+            height: 100%;
+            display: inline-block;
+        }   
         .list_btn{
-            top:55px;
-            right: 20px;
+           
         }
-     
+     .circle{
+        width:40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.8);
+        box-shadow: 0 1px 2px 1px rgba(0,0,0,.15), 0 2px 5px -3px rgba(0,0,0,.15);
+        margin: 0 auto;
+     }
+     .rectangle{
+        width: 100%;
+        height: 40px;
+        background: rgba(255,255,255,0.8);
+        border-radius: 5px;
+        box-shadow: 0 1px 2px 1px rgba(0,0,0,.15), 0 2px 5px -3px rgba(0,0,0,.15);
+        margin: 0 auto;
+        text-align: center;
+        line-height: 42px;
+     }
       .list_page{
+      
         display: none;
         position: absolute;
         width: 100%;
@@ -82,3 +128,18 @@
         right: 5px;
         font-size: 20px;
        }
+       /*Plus icon by Icons8 */
+        .icons8-Plus { /* Customizes Plus icon */
+          fill:#2ecc71;
+          width: 50px;
+          height: 50px;
+        }
+        .icon { /* Customizes all icons at once */
+          display: inline-block;
+        }
+        .ymaps-2-1-50-copyrights-pane{
+            display: none!important;
+        }
+        .inner_init{
+            background: rgba(255,255,255,0.9);
+        }
