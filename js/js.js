@@ -87,14 +87,48 @@ var jsonData = Object.create(null), //Коллекция хранит данны
 
         
         document.querySelector('body').addEventListener('click', function(e){
-        	console.log(e.target);
+        	//console.log(e.target);
         	if(e.target.classList.contains('addMarkers')){
         		createTicket();
            		Custombox.modal.close(); 
         	}
         	if(e.target.classList.contains('list_btn')){
-        		makeList();
-          		modal_list.open();
+        		//makeList();
+          		//modal_list.open();
+          		var promise = new Promise(function(resolve, reject){
+          			resolve(objTickets);
+          			modal_list.open();
+				});
+          		promise
+          			
+		  			.then(
+
+		    			function(result){
+			      			return makeListArray(result);
+		   				},
+		   				function(error) {
+		     				 // вторая функция - запустится при вызове reject
+		   				   alert("Rejected: " + error); // error - аргумент reject
+		    			}
+		 			)
+		 			.then(
+		 				function(result){
+			      			//console.log(result);
+			      			var action = result.map(fn);
+			      			Promise.all(action)
+			      			// .then(function(){
+			      			// 	//setTimeout(function(){modal_list.open()},3000)
+			      			// }); //!!!!!!!!!!!!!!!!!!!!!!!!!ХЗХЗХЗХЗ
+			      		}
+		 			)
+		 			// .then(
+		 			// 	function(result){
+		 			// 		console.log(result);
+		 			// 		if (result =='done'){
+		 			// 			;
+		 			// 		}
+		 			// 	}
+		 			// )
         	}
 
         });
@@ -106,30 +140,95 @@ var jsonData = Object.create(null), //Коллекция хранит данны
         	
         });
 
+        function makeListArray(obj,arr){
+	        var length = obj.features.length;
+	        var c1,c2;
+	        var listHTML = '';
+	        arr = [];
+	        //console.log(objTickets.features[0]);
+	        document.querySelector('.list-group').innerHTML = '';
+	        var wrap = document.querySelector('.custombox-content');
+	        console.log(wrap);
+	        for(var i=0;i<length;i++){
+	           var elem = obj.features[i];
+	            c1 = elem.geometry.coordinates[0];
+	            c2 = elem.geometry.coordinates[1];
+	            (function(){
+	                listHTML = '<div>'+
+	                    '<h5>'+elem.properties.balloonContentHeader+'</h5>'+
+	                    '<p>'+elem.properties.balloonContentBody+'</p>'+
+	                    '<span class="list_address">'+elem.properties.balloonContentFooter+'</span>'+
+	                    '<span class="routeLength" id=id' + elem.id + ' data-coord-long='+c1+' data-coord-lat='+c2+'></span>'+
+	                '</div>';
+	                var elemLi = document.createElement('li');
+	                elemLi.innerHTML = listHTML;       
+	                elemLi.setAttribute('class','list-group-item');
+	                wrap.querySelector('.list-group').appendChild(elemLi);
+	                arr.push(elemLi)
+	                //findRout(c1,c2,elem.id);   
+	            })();  
+	             
+	        }
+	        return arr;
+        }    
+
+		var fn = function findRoutList(elem){ //Ищем путь до метки 
+				
+				//console.log(wrap);
+				var elem_this = elem.querySelector('.routeLength');
+				var id = elem_this.getAttribute('id'),
+					c1 = elem_this.getAttribute('data-coord-long'),
+					c2 = elem_this.getAttribute('data-coord-lat');
+				ymaps.route([myCoordFromBrowser, [c1,c2]], {avoidTrafficJams: true})
+		        .then(
+		            function (route) {
+		                var routeLength = route.getLength();
+			                routeLength = (routeLength / 1000).toFixed(2);
+			                //return (routeLength);
+			                //console.log(routeLength);
+			                elem_this.innerHTML = routeLength + ' км.';
+			                return 'done'; 
+			        },
+		            function (error) {
+		                alert("Возникла ошибка: " + error.message);
+		            }
+		        );
+		    	   
+		};
+
 //MAKE LIST                ****************НАПИСАТЬ PROMISE ПО НАХОЖДЕНИЮ РАССТОЯНИЯ****************
+
+
+// Создаётся объект promise
+
+
+// promise.then навешивает обработчики на успешный результат или ошибку
+
+
+
 function findRout(c1,c2,id){ //Ищем путь до метки 
     ymaps.route([myCoordFromBrowser, [c1,c2]], {avoidTrafficJams: true})
        
         .then(
             function (route) {
                 var routeLength = route.getLength();
-                routeLength = (routeLength / 1000).toFixed(2); 
-                //return (routeLength);
-                //console.log(document.querySelector('#id' + id));
-                document.querySelector('#id' + id).innerHTML = routeLength + ' км.';
-                },
+	                routeLength = (routeLength / 1000).toFixed(2); 
+	                //return (routeLength);
+	                //console.log(document.querySelector('#id' + id));
+	                document.querySelector('#id' + id).innerHTML = routeLength + ' км.';
+	                },
 
             function (error) {
                 alert("Возникла ошибка: " + error.message);
             }
         );
 };
-function makeList (){//Формируем список меток в HTML
+function makeList (arr){//Формируем список меток в HTML
     if(objTickets){
         var length = objTickets.features.length;
         var c1,c2;
         var listHTML = '';
-        var arr = [];
+        arr = [];
         //console.log(objTickets.features[0]);
         document.querySelector('.list-group').innerHTML = '';
         for(var i=0;i<length;i++){
@@ -141,20 +240,21 @@ function makeList (){//Формируем список меток в HTML
                     '<h5>'+elem.properties.balloonContentHeader+'</h5>'+
                     '<p>'+elem.properties.balloonContentBody+'</p>'+
                     '<span class="list_address">'+elem.properties.balloonContentFooter+'</span>'+
-                    '<span class="routeLength" id=id' + elem.id + '></span>'+
+                    '<span class="routeLength" id=id' + elem.id + ' data-coord-long='+c1+' data-coord-lat='+c2+'></span>'+
                 '</div>';
                 var elemLi = document.createElement('li');
                 elemLi.innerHTML = listHTML;       
                 elemLi.setAttribute('class','list-group-item');
                 document.querySelector('.list-group').appendChild(elemLi);
-               //console.log(document.querySelector('#id'+elem.id));
+                //arr.push(elemLi)
                 findRout(c1,c2,elem.id);   
             })();  
              
         }
-     
+    
     }
     else{alert('cant find the DATA');}
+    return arr;
 };  
 
 //END LIST      
